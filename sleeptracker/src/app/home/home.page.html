@@ -1,20 +1,139 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-title>
-      Blank
+      Sleep Tracker
     </ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [(ngModel)]="segment">
+      <ion-segment-button value="overnight">
+        <ion-label>Overnight Sleep</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="sleepiness">
+        <ion-label>Sleepiness</ion-label>
+      </ion-segment-button>
+    </ion-segment>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  @if (segment === 'overnight') {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>{{ editingOvernight ? 'Edit Overnight Sleep' : 'Log Overnight Sleep' }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-label>Bedtime</ion-label>
+          <ion-datetime-button slot="end" datetime="bedtime"></ion-datetime-button>
+        </ion-item>
+        <ion-item>
+          <ion-label>Wake-up time</ion-label>
+          <ion-datetime-button slot="end" datetime="wakeTime"></ion-datetime-button>
+        </ion-item>
+        <ion-modal [keepContentsMounted]="true">
+          <ng-template>
+            <ion-datetime id="bedtime" [(ngModel)]="bedtime" [showDefaultButtons]="true"></ion-datetime>
+          </ng-template>
+        </ion-modal>
+        <ion-modal [keepContentsMounted]="true">
+          <ng-template>
+            <ion-datetime id="wakeTime" [(ngModel)]="wakeTime" [showDefaultButtons]="true"></ion-datetime>
+          </ng-template>
+        </ion-modal>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+        @if (overnightError) {
+          <ion-text color="danger"><p class="message">{{ overnightError }}</p></ion-text>
+        }
+
+        <ion-button expand="block" [disabled]="overnightError !== ''" (click)="saveOvernight()">
+          {{ editingOvernight ? 'Update Sleep Record' : 'Save Sleep Record' }}
+        </ion-button>
+        @if (editingOvernight) {
+          <ion-button expand="block" fill="outline" (click)="resetOvernightForm()">Cancel Edit</ion-button>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Sleep History</ion-label>
+      </ion-list-header>
+      @for (data of overnightData; track data.id) {
+        <ion-item>
+          <ion-label>
+            <h2>{{ data.dateString() }}</h2>
+            <p>Bedtime: {{ data.sleepStart | date:'MMM d, h:mm a' }}</p>
+            <p>Wake-up: {{ data.sleepEnd | date:'MMM d, h:mm a' }}</p>
+            <p>Duration: {{ data.summaryString() }}</p>
+          </ion-label>
+          <ion-button slot="end" fill="clear" size="small" (click)="editOvernight(data)">Edit</ion-button>
+          <ion-button slot="end" fill="clear" size="small" color="danger" (click)="deleteOvernight(data)">Delete</ion-button>
+        </ion-item>
+      } @empty {
+        <ion-item lines="none">
+          <ion-note>No sleep records yet.</ion-note>
+        </ion-item>
+      }
+    </ion-list>
+  } @else {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>{{ editingSleepiness ? 'Edit Sleepiness' : 'Log Sleepiness' }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-select label="Rating" placeholder="Choose 1-7" [(ngModel)]="rating">
+            @for (r of ratings; track r) {
+              <ion-select-option [value]="r">{{ r }} - {{ scaleValues[r] }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+        @if (rating) {
+          <p class="message">{{ scaleValues[rating] }}</p>
+        }
+        <ion-item>
+          <ion-label>Date and time</ion-label>
+          <ion-datetime-button slot="end" datetime="ratingTime"></ion-datetime-button>
+        </ion-item>
+        <ion-modal [keepContentsMounted]="true">
+          <ng-template>
+            <ion-datetime id="ratingTime" [(ngModel)]="ratingTime" [showDefaultButtons]="true"></ion-datetime>
+          </ng-template>
+        </ion-modal>
+
+        @if (sleepinessError) {
+          <ion-text color="danger"><p class="message">{{ sleepinessError }}</p></ion-text>
+        }
+
+        <ion-button expand="block" [disabled]="sleepinessError !== ''" (click)="saveSleepiness()">
+          {{ editingSleepiness ? 'Update Sleepiness' : 'Save Sleepiness' }}
+        </ion-button>
+        @if (editingSleepiness) {
+          <ion-button expand="block" fill="outline" (click)="resetSleepinessForm()">Cancel Edit</ion-button>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Sleepiness History</ion-label>
+      </ion-list-header>
+      @for (data of sleepinessData; track data.id) {
+        <ion-item>
+          <ion-label class="ion-text-wrap">
+            <h2>{{ data.dateString() }}</h2>
+            <p>Time: {{ data.loggedAt | date:'h:mm a' }}</p>
+            <p>Rating: {{ data.summaryString() }}</p>
+          </ion-label>
+          <ion-button slot="end" fill="clear" size="small" (click)="editSleepiness(data)">Edit</ion-button>
+          <ion-button slot="end" fill="clear" size="small" color="danger" (click)="deleteSleepiness(data)">Delete</ion-button>
+        </ion-item>
+      } @empty {
+        <ion-item lines="none">
+          <ion-note>No sleepiness records yet.</ion-note>
+        </ion-item>
+      }
+    </ion-list>
+  }
 </ion-content>
